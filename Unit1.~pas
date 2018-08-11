@@ -249,6 +249,7 @@ type
     Label106: TLabel;
     SpeedButton17: TSpeedButton;
     Label107: TLabel;
+    Label108: TLabel;
     TabSheet11: TTabSheet;
     Memo4: TMemo;
     SpeedButton18: TSpeedButton;
@@ -346,6 +347,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure TrackBar36Change(Sender: TObject);
     procedure SpeedButton17Click(Sender: TObject);
+    procedure SpeedButton18Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
@@ -3649,7 +3651,7 @@ end;
 
 procedure TForm1.TrackBar36Change(Sender: TObject);
 begin
-  label107.Caption:=inttostr(TrackBar36.Position-5);
+  label108.Caption:=inttostr(TrackBar36.Position-5);
 end;
 
 procedure TForm1.SpeedButton17Click(Sender: TObject);
