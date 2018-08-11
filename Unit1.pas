@@ -247,6 +247,7 @@ type
     TrackBar36: TTrackBar;
     Label105: TLabel;
     Label106: TLabel;
+    SpeedButton17: TSpeedButton;
     Label107: TLabel;
     TabSheet11: TTabSheet;
     Memo4: TMemo;
@@ -510,11 +511,9 @@ end;
 
 procedure SetImgBitmapFormat(img:TImage; widthSize:integer; rowsCount:integer);
 begin
+  img.Picture.Bitmap.Width:=widthSize; //1572;
   img.Picture.Bitmap.HandleType:=bmDIB;
   img.Picture.Bitmap.PixelFormat:=pf24bit;
-  img.Picture.Bitmap.Width:=0;
-  img.Picture.Bitmap.Height:=0;
-  img.Picture.Bitmap.Width:=widthSize;
   img.Picture.Bitmap.Height:=rowsCount;
 end;
 
@@ -2359,10 +2358,14 @@ begin
                   if (0<=ipixelScaled_1) and (0<=ipixelScaled_2) and (ipixelScaled_1<length(MSUFullStruct.MSUChannelsData[channelLeft][0].pixels)) and (ipixelScaled_2<length(MSUFullStruct.MSUChannelsData[channelLeft][0].pixels)) 
                      and (0<=iLineScaled_1) and (0<=iLineScaled_2) and (iLineScaled_1<MSUFullStruct.MSULinesInFile) and (iLineScaled_2<MSUFullStruct.MSULinesInFile) then
                     begin
+                      //cloudValue:=round(
+                      //  (MSUFullStruct.MSUChannelsData[channelLeft][i].pixels[ipixelScaled_1] shr 8) * (1-kPixel) +
+                      //  (MSUFullStruct.MSUChannelsData[channelLeft][i].pixels[ipixelScaled_2] shr 8) * kPixel );
+
                       cloudValue:=round(
-                        ( (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_1] shr 8) * (1-kPixel) + (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_2] shr 8) * kPixel )*(1-kLine) +
-                        ( (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_1] shr 8) * (1-kPixel) + (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_2] shr 8) * kPixel )*kLine
-                         );
+                          ((MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_1] shr 8) * (1-kPixel) + (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_1].pixels[ipixelScaled_2] shr 8) * kPixel )*(1-kLine) +
+                          ((MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_2].pixels[ipixelScaled_1] shr 8) * (1-kPixel) + (MSUFullStruct.MSUChannelsData[channelLeft][iLineScaled_2].pixels[ipixelScaled_2] shr 8) * kPixel )*kLine
+                        );
                     end
                   else cloudValue:=0;
 
@@ -2378,9 +2381,33 @@ begin
               if drawMethod=RGBMethod then
                 begin
                   //** sharpness - уровень повышения четкости или размытости
-                  rValue:=round(GetSharpnessPixel(rChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(rChannel,i,ipixelScaled_2,sharpness) * kPixel);
-                  gValue:=round(GetSharpnessPixel(gChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(gChannel,i,ipixelScaled_2,sharpness) * kPixel);
-                  bValue:=round(GetSharpnessPixel(bChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(bChannel,i,ipixelScaled_2,sharpness) * kPixel);
+                  //rValue:=round(GetSharpnessPixel(rChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(rChannel,i,ipixelScaled_2,sharpness) * kPixel);
+                  //gValue:=round(GetSharpnessPixel(gChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(gChannel,i,ipixelScaled_2,sharpness) * kPixel);
+                  //bValue:=round(GetSharpnessPixel(bChannel,i,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(bChannel,i,ipixelScaled_2,sharpness) * kPixel);
+
+                  if (0<=ipixelScaled_1) and (0<=ipixelScaled_2) and (ipixelScaled_1<length(MSUFullStruct.MSUChannelsData[channelLeft][0].pixels)) and (ipixelScaled_2<length(MSUFullStruct.MSUChannelsData[channelLeft][0].pixels))
+                     and (0<=iLineScaled_1) and (0<=iLineScaled_2) and (iLineScaled_1<MSUFullStruct.MSULinesInFile) and (iLineScaled_2<MSUFullStruct.MSULinesInFile) then
+                    begin       
+                      rValue:=round(
+                          (GetSharpnessPixel(rChannel,iLineScaled_1,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(rChannel,iLineScaled_1,ipixelScaled_2,sharpness) * kPixel)*(1-kLine) +
+                          (GetSharpnessPixel(rChannel,iLineScaled_2,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(rChannel,iLineScaled_2,ipixelScaled_2,sharpness) * kPixel)*kLine
+                        );
+                      gValue:=round(
+                          (GetSharpnessPixel(gChannel,iLineScaled_1,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(gChannel,iLineScaled_1,ipixelScaled_2,sharpness) * kPixel)*(1-kLine) +
+                          (GetSharpnessPixel(gChannel,iLineScaled_2,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(gChannel,iLineScaled_2,ipixelScaled_2,sharpness) * kPixel)*kLine
+                        );
+                      bValue:=round(
+                          (GetSharpnessPixel(bChannel,iLineScaled_1,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(bChannel,iLineScaled_1,ipixelScaled_2,sharpness) * kPixel)*(1-kLine) +
+                          (GetSharpnessPixel(bChannel,iLineScaled_2,ipixelScaled_1,sharpness) * (1-kPixel) + GetSharpnessPixel(bChannel,iLineScaled_2,ipixelScaled_2,sharpness) * kPixel)*kLine
+                        );
+                    end
+                  else
+                   begin
+                     rValue:=0;
+                     gValue:=0;
+                     bValue:=0;
+                   end;                
+
                 end;
                 //image2.Picture.Bitmap.Canvas.Pixels[scaledCol,scaledRow]:=CombineColors(
               if drawMethod=FalseColorMethod then
@@ -3626,6 +3653,26 @@ begin
 end;
 
 procedure TForm1.SpeedButton17Click(Sender: TObject);
+var
+ i,j,k:integer;
+ s:string;
+begin
+  memo3.Lines.Clear();
+  for i:=0 to 2 do
+    begin
+      for j:=0 to 9 do
+        begin
+          s:='';
+          for k:=0 to 9 do
+            begin
+              s:=s+#$9+inttostr(i)+', '+inttostr(j)+', '+inttostr(k)+', ';
+            end;
+          memo3.Lines.Add(s+'\');
+        end;
+    end;
+end;
+
+procedure TForm1.SpeedButton18Click(Sender: TObject);
 begin
   ScrollBar1.Position:=10;
   ScrollBar1.Visible:=true;
