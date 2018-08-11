@@ -7371,12 +7371,12 @@ object Form1: TForm1
         Height = 13
         Caption = 'maximize font'
       end
-      object Label107: TLabel
+      object Label108: TLabel
         Left = 224
         Top = 96
         Width = 44
         Height = 13
-        Caption = 'Label107'
+        Caption = 'Label108'
       end
       object Edit3: TEdit
         Left = 8

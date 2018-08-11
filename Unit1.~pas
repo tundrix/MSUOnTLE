@@ -249,6 +249,11 @@ type
     Label106: TLabel;
     SpeedButton17: TSpeedButton;
     Label107: TLabel;
+    TabSheet11: TTabSheet;
+    Memo4: TMemo;
+    SpeedButton18: TSpeedButton;
+    ScrollBar1: TScrollBar;
+    Timer1: TTimer;
     procedure CombinePicture( drawMethod: TDrawMethod;
 // Night method
   channelLeft,channelRight:byte; // *** mercator bottom layer is disabled now rgbCompressPercent:integer;
@@ -339,7 +344,9 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure Image8MouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure TrackBar36Change(Sender: TObject);
     procedure SpeedButton17Click(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
   public
@@ -2239,8 +2246,8 @@ begin
           //** Берем указатель на строку изображения и погнали его заполнять
           pScanLine:=image2.Picture.Bitmap.ScanLine[scaledRow];
           //так было, когда края Земли не растягивали: for ipixel:=0 to (MSUVideoChannelHalfLen16bit div scale)-1 do
-          for ipixel:={0}-(pixelsInPicLine div 2 )+1 to (pixelsInPicLine div 2 )-1  do
-              begin
+          for ipixel:={0}-(pixelsInPicLine div 2 )+2 to (pixelsInPicLine div 2 )-2  do    // +-2 because {pScanLine[scaledCol*3+2]:=dstRColor;} give me error on 8x scale
+              begin                                                                       // before this problem +-1 was here
                   //form1.Caption:='ipixel='+inttostr(ipixel);
                   //Application.ProcessMessages();
                   //if ipixel=871 then
@@ -2446,9 +2453,12 @@ begin
                   hideHue,
 
                   dstRColor,dstGColor,dstBColor);
-              pScanLine[scaledCol*3+2]:=dstRColor;
-              pScanLine[scaledCol*3+1]:=dstGColor;
-              pScanLine[scaledCol*3  ]:=dstBColor;
+              if scaledCol*3+2 <= 65535 then
+                begin
+                  pScanLine[scaledCol*3+2]:=dstRColor;
+                  pScanLine[scaledCol*3+1]:=dstGColor;
+                  pScanLine[scaledCol*3  ]:=dstBColor;
+                end;
 
               (*
             //правая сторона
@@ -2896,7 +2906,7 @@ end;
 
 procedure TForm1.TrackBar6Change(Sender: TObject);
 begin
-  Label32.Caption:=format('%.2f',[8.0/TrackBar6.Position]);
+  Label32.Caption:=format('%.3f',[8.0/TrackBar6.Position]);
 end;
 
 procedure TForm1.SpeedButton7Click(Sender: TObject);
@@ -3078,8 +3088,8 @@ var
  timeOfMSULine : time_set;
  jTimeOfMSULine : double;
  sat_gd_this,sat_gd_next:vector;
- latitude:integer;
- longitude:integer;
+ latitude,longitude:integer;
+ latitudeF,longitudeF:double;
 // latThis,lonThis,latNext,lonNext:double;
  zScaleXX_this,zScaleYY_this, zScaleXX_next,zScaleYY_next:double;
  minifier_good:double;
@@ -3088,6 +3098,7 @@ var
  angle:double;
  rgbColor:TRGBColor;
  hsbColor:THSBColor;
+ DecimalSeparatorTmp: Char;
 begin
   ScrollBox1.SetFocus();
   if MSUFullStruct.MSULinesInFile>0 then
@@ -3115,12 +3126,14 @@ begin
           minifier_good:=1{/2.5} * 55.4*piDiv180;
           rotateLeftRight:=TrackBar7.Position/10.0;
           getLatLonAltPlusOrtoVector(jTimeOfMSULine,+(msuX-MSUVideoChannelHalfLen16bit)*minifier_good/MSUVideoChannelHalfLen16bit-(rotateLeftRight*piDiv180),sat_gd_this);
-          getLatLonAltPlusOrtoVector(jTimeOfMSULine,+((msuX+1)-MSUVideoChannelHalfLen16bit)*minifier_good/MSUVideoChannelHalfLen16bit-(rotateLeftRight*piDiv180),sat_gd_next);
-          latitude:=trunc(sat_gd_this[1]*piIn180);
-          longitude:=round(Degrees(sat_gd_this[2]));
+//          getLatLonAltPlusOrtoVector(jTimeOfMSULine,+((msuX+1)-MSUVideoChannelHalfLen16bit)*minifier_good/MSUVideoChannelHalfLen16bit-(rotateLeftRight*piDiv180),sat_gd_next);
+          latitudeF:=sat_gd_this[1]*piIn180;
+          longitudeF:=Degrees(sat_gd_this[2]);
+          latitude:=trunc(latitudeF);
+          longitude:=round(longitudeF);
           //zScale:=calcZScale(latitude,round(calcAngle(sat_gd_this,sat_gd_next)));
           angle:=abs( (msuX-MSUVideoChannelHalfLen16bit)*100/(MSUVideoChannelHalfLen16bit) );
-          zScale:=trunc(calcZScale(latitude{, round(angle)}{, false},1,TrackBar36.Position));
+          zScale:=trunc(calcZScale(latitude{, round(angle)}{, false},8.0/TrackBar6.Position,TrackBar36.Position));
           label53.Caption:='Latitude: '+inttostr(latitude)+' Longitude: '+inttostr(longitude)+' zScale: '+inttostr(zScale);
           {
           latThis:=sat_gd_this[1]*piIn180;
@@ -3148,6 +3161,24 @@ begin
           label87.Caption:='Red: '+inttostr(rgbColor.r)+' Green: '+inttostr(rgbColor.g)+' Blue: '+inttostr(rgbColor.b);
           label88.Caption:='Hue: '+inttostr(round(hsbColor.Hue))+' Sat: '+inttostr(round(hsbColor.Sat))+' Bright: '+inttostr(round(hsbColor.Br));
 
+          if timer1.Enabled then
+            begin
+              Memo4.Lines.Clear();
+
+              DecimalSeparatorTmp:=DecimalSeparator;
+
+              DecimalSeparator := '.';
+              memo4.Lines.Add(format('%.6f, %.6f',[latitudeF,longitudeF]));
+              memo4.Lines.Add(format('%.6f, %.6f',[longitudeF,latitudeF]));
+              memo4.Lines.Add(format('%.6f, %.6f, %dz',[latitudeF,longitudeF,zScale]));
+              memo4.Lines.Add(format('%.6f, %.6f, %dz',[longitudeF,latitudeF,zScale]));
+              memo4.Lines.Add(format('https://www.google.ru/maps/@%.6f,%.6f,%dz',[latitudeF,longitudeF,zScale]));
+//              memo4.Lines.Add('https://www.google.ru/maps/@'+FormatFloat('##.000000',latitudeF)+','+FormatFloat('##.000000',longitudeF)+','+inttostr(zScale)+'z');
+              memo4.Lines.Add(format('https://yandex.ru/maps/?ll=%.6f%%2C%.6f&z=%d',[longitudeF,latitudeF,zScale]));
+
+              DecimalSeparator:=DecimalSeparatorTmp;
+
+            end;
         end;
     end;
 end;
@@ -3616,6 +3647,11 @@ begin
 end;
 
 
+procedure TForm1.TrackBar36Change(Sender: TObject);
+begin
+  label107.Caption:=inttostr(TrackBar36.Position-5);
+end;
+
 procedure TForm1.SpeedButton17Click(Sender: TObject);
 var
  i,j,k:integer;
@@ -3634,6 +3670,28 @@ begin
           memo3.Lines.Add(s+'\');
         end;
     end;
+end;
+
+procedure TForm1.SpeedButton18Click(Sender: TObject);
+begin
+  ScrollBar1.Position:=10;
+  ScrollBar1.Visible:=true;
+  memo4.Color:=clBtnFace;
+  timer1.Enabled:=true;
+end;
+
+procedure TForm1.Timer1Timer(Sender: TObject);
+begin
+  if ScrollBar1.Position>0 then
+    begin
+      ScrollBar1.Position:=ScrollBar1.Position-1;
+    end
+   else
+     begin
+       timer1.Enabled:=false;
+       ScrollBar1.Visible:=false;
+       memo4.Color:=clWindow;
+     end
 end;
 
 end.

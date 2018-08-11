@@ -251,7 +251,7 @@ type
     Label107: TLabel;
     TabSheet11: TTabSheet;
     Memo4: TMemo;
-    SpeedButton17: TSpeedButton;
+    SpeedButton18: TSpeedButton;
     ScrollBar1: TScrollBar;
     Timer1: TTimer;
     procedure CombinePicture( drawMethod: TDrawMethod;
@@ -346,6 +346,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure TrackBar36Change(Sender: TObject);
     procedure SpeedButton17Click(Sender: TObject);
+    procedure SpeedButton18Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
