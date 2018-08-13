@@ -41,6 +41,9 @@ type
     hide180:bool;
   end;
 
+  TByteArray = Array[0..1000000000] of Byte;
+  pByteArray = ^TByteArray;
+
   TForm1 = class(TForm)
     od2: TOpenDialog;
     SpeedButton4: TSpeedButton;
@@ -255,6 +258,7 @@ type
     SpeedButton18: TSpeedButton;
     ScrollBar1: TScrollBar;
     Timer1: TTimer;
+    SpeedButton19: TSpeedButton;
     procedure CombinePicture( drawMethod: TDrawMethod;
 // Night method
   channelLeft,channelRight:byte; // *** mercator bottom layer is disabled now rgbCompressPercent:integer;
@@ -349,6 +353,7 @@ type
     procedure SpeedButton17Click(Sender: TObject);
     procedure SpeedButton18Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
+    procedure SpeedButton19Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -3694,6 +3699,196 @@ begin
        ScrollBar1.Visible:=false;
        memo4.Color:=clWindow;
      end
+end;
+
+procedure TForm1.SpeedButton19Click(Sender: TObject);
+var
+ fnGol,fnGolwoPath:string;
+ fnDirtyMSU:string;
+ fnMSU:string;
+ fGol:file;
+ fDirtyMSU:file;
+ fMSU:file;
+ GolFilesize, GolReaded:integer;
+ DirtyMSUFilesize, DirtyMSUReaded:integer;
+ i:integer;
+
+ pGolFromFile:pByteArray;
+ pDirtyMSUFromFile:pByteArray;
+
+begin
+  od1.FileName:=edit1.Text;
+  if od1.Execute then
+    begin
+      edit1.Text:=od1.FileName;
+
+      fnGol:=edit1.Text;
+      fnDirtyMSU:=fnGol+'.dirtyraw';
+      fnGolwoPath:=ExtractFileName(fnGol);
+      fnMSU:=ExtractFileDir(fnGol)+'\'+
+        'M02_MSU_107_SP2_'+copy(fnGolwoPath,14,2)+copy(fnGolwoPath,12,2)+copy(fnGolwoPath,8,4)+'_'+copy(fnGolwoPath,17,4)+'00'+'_000000'+'.raw';
+
+      if FileExists(fnGol) then
+        begin
+
+          speedbutton6.Enabled:=false;
+          speedbutton3.Enabled:=false;
+          speedbutton14.Enabled:=false;
+          screen.Cursor:=crHourGlass;
+          Application.ProcessMessages();
+
+          AssignFile(fGol, fnGol);
+          Reset(fGol, 1);
+          GolFilesize:=FileSize(fGol);
+
+          AssignFile(fDirtyMSU, fnDirtyMSU);
+          Rewrite(fDirtyMSU, 1);
+
+          ProgressBar1.Position := 0;
+          ProgressBar1.Max := GolFilesize;
+
+
+          GetMem(pGolFromFile, GolFilesize);
+          BlockRead(fGol, pGolFromFile[0], GolFilesize, GolReaded);
+          if GolFilesize = GolReaded then
+            begin
+
+              i := 0;
+              while i < GolFilesize - $404 do
+                begin
+                  if i mod 100000 = 0 then
+                    begin
+                      ProgressBar1.Position:=i;
+                      Application.ProcessMessages();
+                    end;
+
+                  if     (pGolFromFile[i  ]      =  26)
+                     and (pGolFromFile[i+1]      = 207)
+                     and (pGolFromFile[i+2]      = 252)
+                     and (pGolFromFile[i+3]      =  29)
+                     and (pGolFromFile[i+$400  ] =  26)
+                     and (pGolFromFile[i+$400+1] = 207)
+                     and (pGolFromFile[i+$400+2] = 252)
+                     and (pGolFromFile[i+$400+3] =  29)
+                  then
+                    begin
+                      BlockWrite(fDirtyMSU, pGolFromFile[i+ 22], 238);
+                      BlockWrite(fDirtyMSU, pGolFromFile[i+278], 238);
+                      BlockWrite(fDirtyMSU, pGolFromFile[i+534], 238);
+                      BlockWrite(fDirtyMSU, pGolFromFile[i+790], 234);
+                    end;
+                  i := i + 1;
+                end;
+            end
+          else
+            begin
+              MessageBox(form1.Handle,'File was not read to end!','Error',0);
+            end;
+
+          ProgressBar1.Position:=0;
+
+          CloseFile(fGol);
+          CloseFile(fDirtyMSU);
+
+          FreeMem(pGolFromFile);
+
+          screen.Cursor:=crDefault;
+        end
+      else
+        begin
+          MessageBox(form1.Handle,pchar('File not found! '+fnGol),'Error',0);
+        end;
+
+
+
+
+
+      if FileExists(fnDirtyMSU) then
+        begin
+
+          speedbutton6.Enabled:=false;
+          speedbutton3.Enabled:=false;
+          speedbutton14.Enabled:=false;
+          screen.Cursor:=crHourGlass;
+          Application.ProcessMessages();
+
+          AssignFile(fDirtyMSU, fnDirtyMSU);
+          Reset(fDirtyMSU, 1);
+          DirtyMSUFilesize:=FileSize(fDirtyMSU);
+
+          AssignFile(fMSU, fnMSU);
+          Rewrite(fMSU, 1);
+
+          ProgressBar1.Position := 0;
+          ProgressBar1.Max := DirtyMSUFilesize;
+
+
+          GetMem(pDirtyMSUFromFile, DirtyMSUFilesize);
+          BlockRead(fDirtyMSU, pDirtyMSUFromFile[0], DirtyMSUFilesize, DirtyMSUReaded);
+          if DirtyMSUFilesize = DirtyMSUReaded then
+            begin
+
+              i := 0;
+              while i < DirtyMSUFilesize - (11850+8) do
+                begin
+                  if i mod 100000 = 0 then
+                    begin
+                      ProgressBar1.Position:=i;
+                      Application.ProcessMessages();
+                    end;
+
+                  if     (pDirtyMSUFromFile[i  ]       =   2)
+                     and (pDirtyMSUFromFile[i+1]       =  24)
+                     and (pDirtyMSUFromFile[i+2]       = 167)
+                     and (pDirtyMSUFromFile[i+3]       = 163)
+                     and (pDirtyMSUFromFile[i+4]       = 146)
+                     and (pDirtyMSUFromFile[i+5]       = 221)
+                     and (pDirtyMSUFromFile[i+6]       = 154)
+                     and (pDirtyMSUFromFile[i+7]       = 191)
+                     and (pDirtyMSUFromFile[i+11850  ] =   2)
+                     and (pDirtyMSUFromFile[i+11850+1] =  24)
+                     and (pDirtyMSUFromFile[i+11850+2] = 167)
+                     and (pDirtyMSUFromFile[i+11850+3] = 163)
+                     and (pDirtyMSUFromFile[i+11850+4] = 146)
+                     and (pDirtyMSUFromFile[i+11850+5] = 221)
+                     and (pDirtyMSUFromFile[i+11850+6] = 154)
+                     and (pDirtyMSUFromFile[i+11850+7] = 191)
+                  then
+                    begin
+                      BlockWrite(fMSU, pDirtyMSUFromFile[i], 11850);
+                    end;
+                  i := i + 1;
+                end;
+            end
+          else
+            begin
+              MessageBox(form1.Handle,'File was not read to end!','Error',0);
+            end;
+
+          ProgressBar1.Position:=0;
+
+          CloseFile(fDirtyMSU);
+          CloseFile(fMSU);
+
+          FreeMem(pDirtyMSUFromFile);
+
+          screen.Cursor:=crDefault;
+        end
+      else
+        begin
+          MessageBox(form1.Handle,pchar('File not found! '+fnDirtyMSU),'Error',0);
+        end;
+
+
+
+
+
+
+
+      edit1.Text:=fnMSU;
+      ProcessMSUFileName();
+
+    end;
 end;
 
 end.
