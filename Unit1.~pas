@@ -3726,7 +3726,7 @@ begin
       fnDirtyMSU:=fnGol+'.dirtyraw';
       fnGolwoPath:=ExtractFileName(fnGol);
       fnMSU:=ExtractFileDir(fnGol)+'\'+
-        'M02_MSU_107_SP2_'+copy(fnGolwoPath,14,2)+copy(fnGolwoPath,12,2)+copy(fnGolwoPath,8,4)+'00'+'_'+copy(fnGolwoPath,17,4)+'_000000'+'.raw';
+        'M02_MSU_107_SP2_'+copy(fnGolwoPath,14,2)+copy(fnGolwoPath,12,2)+copy(fnGolwoPath,8,4)+'_'+copy(fnGolwoPath,17,4)+'00'+'_000000'+'.raw';
 
       if FileExists(fnGol) then
         begin

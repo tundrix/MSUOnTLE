@@ -2784,14 +2784,18 @@ again:
       if LowerCase(ExtractFileExt(sd1.FileName))='.bmp' then
         begin
           screen.cursor:=crHourGlass;
+          ProgressBar1.Position:=ProgressBar1.Min + ((ProgressBar1.Max-ProgressBar1.Min) div 2);
           Application.ProcessMessages();
           image2.Picture.Bitmap.SaveToFile(sd1.FileName);
           saved:=true;
           screen.Cursor:=crDefault;
+          ProgressBar1.Position:=ProgressBar1.Min;
+          MessageBox(Form1.Handle,'Ready','Ready!',MB_APPLMODAL);
         end;
       if LowerCase(ExtractFileExt(sd1.FileName))='.jpg' then
         begin
           screen.cursor:=crHourGlass;
+          ProgressBar1.Position:=ProgressBar1.Min + ((ProgressBar1.Max-ProgressBar1.Min) div 2);
           Application.ProcessMessages();
           jpg:=TJPEGImage.Create();
           jpg.CompressionQuality:=100;
@@ -2799,6 +2803,7 @@ again:
           jpg.SaveToFile(sd1.FileName);
           saved:=true;
           screen.cursor:=crDefault;
+          ProgressBar1.Position:=ProgressBar1.Min;
           MessageBox(Form1.Handle,'Ready','Ready!',MB_APPLMODAL);
         end;
       if not saved then
