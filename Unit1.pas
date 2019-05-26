@@ -259,6 +259,7 @@ type
     ScrollBar1: TScrollBar;
     Timer1: TTimer;
     SpeedButton19: TSpeedButton;
+    CheckBox7: TCheckBox;
     procedure CombinePicture( drawMethod: TDrawMethod;
 // Night method
   channelLeft,channelRight:byte; // *** mercator bottom layer is disabled now rgbCompressPercent:integer;
@@ -2439,6 +2440,19 @@ begin
                    end;
                 end;
 
+
+
+
+              //СЕТКА паралелей и меридианов
+              if CheckBox7.Checked then
+                if (round(DolgotaToX(Degrees(sat_gd_left[2]),aWidaHei[zScale].pixelLimits.X)) mod 10 = 0)
+                   or (round(ShirotaToY({Degrees}(sat_gd_left[1]),aWidaHei[zScale].pixelLimits.Y)) mod 10 = 0) then
+                  bChValue:=196*256;
+
+
+
+
+
               CombineColors(
 
                   drawMethod,
@@ -3706,6 +3720,37 @@ begin
      end
 end;
 
+function BitDiffs(b1,b2: byte):integer; overload;
+var
+  b:byte;
+  n:integer;
+begin
+  b:=b1 xor b2;
+  n:=0;
+  if (b and $01) = $01 then n:=n+1;
+  if (b and $02) = $02 then n:=n+1;
+  if (b and $04) = $04 then n:=n+1;
+  if (b and $08) = $08 then n:=n+1;
+  if (b and $10) = $10 then n:=n+1;
+  if (b and $20) = $20 then n:=n+1;
+  if (b and $40) = $40 then n:=n+1;
+  if (b and $80) = $80 then n:=n+1;
+  BitDiffs:=n;
+end;
+
+function BitDiffs(ba1: pByteArray; pos1: integer; ba2: pByteArray; pos2: integer; n:integer):Integer; overload;
+var
+ i: integer;
+ count: integer;
+begin
+  count:=0;
+  for i:=0 to n-1 do
+    begin
+      count := count+BitDiffs(ba1[pos1+i], ba2[pos2+i]);
+    end;
+  BitDiffs:=count;
+end;
+
 procedure TForm1.SpeedButton19Click(Sender: TObject);
 var
  fnGol,fnGolwoPath:string;
@@ -3720,8 +3765,27 @@ var
 
  pGolFromFile:pByteArray;
  pDirtyMSUFromFile:pByteArray;
-
+ pSyncTransport:pByteArray;
+ bitDiffCount:integer;
+ rollSync:integer;
+ pSyncMSU:pByteArray;
 begin
+  getmem(pSyncTransport,4);
+  pSyncTransport[0]:= 26;
+  pSyncTransport[1]:= 207;
+  pSyncTransport[2]:= 252;
+  pSyncTransport[3]:= 29;
+  getmem(pSyncMSU,8);
+  pSyncMSU[0]:= 2;
+  pSyncMSU[1]:= 24;
+  pSyncMSU[2]:= 167;
+  pSyncMSU[3]:= 163;
+  pSyncMSU[4]:= 146;
+  pSyncMSU[5]:= 221;
+  pSyncMSU[6]:= 154;
+  pSyncMSU[7]:= 191;
+  rollSync:= 0;
+
   od1.FileName:=edit1.Text;
   if od1.Execute then
     begin
@@ -3781,6 +3845,31 @@ begin
                       BlockWrite(fDirtyMSU, pGolFromFile[i+278], 238);
                       BlockWrite(fDirtyMSU, pGolFromFile[i+534], 238);
                       BlockWrite(fDirtyMSU, pGolFromFile[i+790], 234);
+                      rollSync:=i+$400;
+                    end
+                  else
+                    begin
+                      bitDiffCount := BitDiffs(pGolFromFile, i, pSyncTransport, 0, 4);
+                      bitDiffCount := bitDiffCount + BitDiffs(pGolFromFile, i+$400, pSyncTransport, 0, 4);
+                      if (bitDiffCount<10) and (1=1) then
+                        begin
+                          BlockWrite(fDirtyMSU, pGolFromFile[i+ 22], 238);
+                          BlockWrite(fDirtyMSU, pGolFromFile[i+278], 238);
+                          BlockWrite(fDirtyMSU, pGolFromFile[i+534], 238);
+                          BlockWrite(fDirtyMSU, pGolFromFile[i+790], 234);
+                          rollSync:=i+$400;
+                        end
+                      else
+                        begin
+                          if (i=rollSync) and (i>0) then
+                            begin
+                              BlockWrite(fDirtyMSU, pGolFromFile[i+ 22], 238);
+                              BlockWrite(fDirtyMSU, pGolFromFile[i+278], 238);
+                              BlockWrite(fDirtyMSU, pGolFromFile[i+534], 238);
+                              BlockWrite(fDirtyMSU, pGolFromFile[i+790], 234);
+                              rollSync:=i+$400;
+                            end;
+                        end;
                     end;
                   i := i + 1;
                 end;
@@ -3861,7 +3950,31 @@ begin
                   then
                     begin
                       BlockWrite(fMSU, pDirtyMSUFromFile[i], 11850);
+                      rollSync:=i+11850;
+                    end
+                  else
+                    begin
+                      bitDiffCount := BitDiffs(pDirtyMSUFromFile, i, pSyncMSU, 0, 8);
+                      bitDiffCount := bitDiffCount + BitDiffs(pDirtyMSUFromFile, i+11850, pSyncMSU, 0, 8);
+                      if (bitDiffCount<20) and (1=1) then
+                        begin
+                          BlockWrite(fMSU, pDirtyMSUFromFile[i], 11850);
+                          rollSync:=i+11850;
+                        end
+                      else
+                        begin
+                          if (i=rollSync) and (i>0) then
+                            begin
+                              BlockWrite(fMSU, pDirtyMSUFromFile[i], 11850);
+                              rollSync:=i+11850;
+                            end;
+                        end;
+
                     end;
+
+
+
+
                   i := i + 1;
                 end;
             end
@@ -3894,6 +4007,8 @@ begin
       ProcessMSUFileName();
 
     end;
+    freemem(pSyncTransport);
+    freemem(pSyncMSU);
 end;
 
 end.
